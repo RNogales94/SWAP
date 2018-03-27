@@ -53,7 +53,8 @@ Para clonar la carpeta /var/www de la máquina M1 a la máquina M2 hacemos nos v
 rsync -avz -e ssh ipmaquinaM1:/var/www/ /var/www/
 ```
 
-Nos debe quedar algo así:
+Nos debe quedar algo así:  
+
 ![](./img/rsync.png)
 
 *Nota:* Cabe destacar que cuando utilizamos rsync la carpeta en el destino es una copia identica de la carpeta origina, es decir mantiene los permisos de los usuarios y las fechas de modificación y creación de la máquina original.
