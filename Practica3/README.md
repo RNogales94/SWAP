@@ -203,9 +203,22 @@ _-- exclude=**/html/name.html_
 ```
 
 #### Paso 3: Configuración ampliada de NGINX:
+##### Mantener sesiones:
+Esta configuración es muy útil, pero aún así nos interesará que todas las peticiones que vengan de la misma IP se dirijan a la misma máquina servidora final. Esto es así porque si el usuario está usando una aplicación web que mantiene algún tipo de estado durante la navegación, y el balanceador lo cambia a otra máquina servidora final, puede que reciba algún error.  
+Para evitarlo, podemos hacer un balanceo por IP, de forma que todo el tráfico que venga de una IP se sirva durante toda la sesión por el mismo servidor final. Para ello, como hemos indicado antes, usaremos la directiva *ip_hash* al definir el upstream:
 
+```
+upstream apaches {
+    ip_hash;
+    server 192.168.1.36 weight=1;
+    server 192.168.1.64 weight=1;
+}
+```
+Aquí además hemos anotado explicitamente que ambas máquinas deben recibir el mismo peso ya que las máquinas tienen la misma potencia.
 
+Hay formas mejores de conseguir la persistencia de sesión pero no están disponibles en la versión gratuita de NGINX.
 
+Podemos ver más opciones de configuración de nginx [en esta guía](https://futurestud.io/tutorials/nginx-load-balancing-advanced-configuration).
 
 
 
