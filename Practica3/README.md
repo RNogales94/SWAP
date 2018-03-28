@@ -33,6 +33,13 @@ Para esta guía vamos a tener tres máquinas Ubuntu 16.04 con las siguientes car
 - IP: 192.169.1.59
 - Username: user
 
+###### M4:
+- IP: 192.169.1.XXX
+- Sistema Operativo: Irrelevante (OS X en mi caso)
+- Otra máquina en la red (en mi caso el anfitrión)
+
+
+![esquema de las máquinas](./img/arquitectura.png)
 
 ### Opción 1: Usar NGINX como balanceador de carga:
 
@@ -98,6 +105,79 @@ Available applications:
 Si Nginx no apareciese en la lista del cortafuegos o si tuviesemos algún otro problema podemos consultar [la guía de instalación detallada de nginx](https://www.liberiangeek.net/2016/07/how-to-install-nginx-webserver-on-ubuntu-16-04/)
 
 #### Paso 2: Configurar nginx como balanceador de carga
+nginx soporta la realización de balanceo de carga mediante la directiva *proxy_pass*. En nuestro caso nos interesa redirigir el tráfico a un grupo de servidores. Para definir este grupo deberemos dar un nombre al conjunto mediante la directiva *upstream*.  
+Para aclarar las cosas vamos a ir directamente al fichero de configuración de nginx */etc/nginx/conf.d/default.conf* y empezar a tocar.  
+Lo normal en una máquina recien instalada es que este fichero no exista por lo que lo creamos con:
+```
+sudo touch /etc/nginx/conf.d/default.conf
+```
+Si el fichero existía debemos crear una copia de seguridad del mismo y crear uno nuevo con el mismo nombre borrando todo su contenido:
+```
+sudo cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.backup
+sudo rm /etc/nginx/conf.d/default.conf
+sudo touch /etc/nginx/conf.d/default.conf
+```
+Ahora que tenemos el archivo limpio vamos a configurar nginx como balanceador de carga, para ello vamos a ir configurando las directivas en el fichero poco a poco y explicando su uso:
+##### upstream:
+La directiva *upstream* se utiliza para crear grupos de servidores entre los que balancear el tráfico, en nuestro caso vamos a crear un grupo de servidores web, que como son Apache2 vamosa a llamar *apaches*, para ello añadimos el siguiente bloque al archivo de configuración:
+```
+upstream apaches {
+    server 192.168.1.36;
+    server 192.168.1.64;
+}
+```
+*Notas:*
++ Además de la IP también se pueden usar los nombres de dominio.
++ Es muy recomendable colocar la directiva upstream al principio del archivo para que el resto de directivas puedan referenciar el cluster.
+
+##### server:
+La directiva *server* se utiliza para definir el comportamiento de nginx como servidor. En este caso se está configurando como proxy entre internet y los servidores apaches.  
+Y lo que hace es redirigir el tráfico del puerto 80 hacia el cluster "apaches" que hemos definido con upstream.  
+Además es importante que se use *http versión 1.1* y borrar la cabecera Connection para que el servidor final no la vea.
+
+
+```
+server{
+    listen 80;
+    server_name balanceador;
+    access_log /var/log/nginx/balanceador.access.log;
+    error_log /var/log/nginx/balanceador.error.log;
+    root /var/www/;
+
+    location / {
+        proxy_pass http://apaches;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+}
+```
+Esto es una configuración muy estandard que usa balanceo round-robin.  
+Para ampliar sobre el funcionamiento de nginx se recomienda ir a la [guía oficial en español.](http://nginx.org/en/docs/http/load_balancing.html)
+
+##### Desactivar sites:
+Por defecto nginx viene configurado como servidor web, por lo que debemos desactivar los sitios desde los que sirve contenido por defecto, para que lo primero que encuentre sean nuestras máquinas apaches en lugar de su web por defecto.  
+Para ello hay que ir al archivo /etc/nginx/nginx.conf y borrar o comentar la ultima linea del bloque http:
+```
+include /etc/nginx/sites-enabled/*;
+```
+*Nota:* Para comentarla basta con añadir *#* delante.
+
+En este punto podemos relanzar el servidor nginx:
+```
+sudo systemctl reload nginx
+```
+Y probar a acceder desde el navegador (o con curl) a la IP del balanceador y ver que aparece una página de apache:
+
+![apache funcionando tras el balanceador](./img/apache1.png)
+
+#### Paso 3: Configuración ampliada de NGINX:
+
+
+
+
 
 
 ### Usar HAProxy como balanceador de carga:
