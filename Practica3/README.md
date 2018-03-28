@@ -173,6 +173,35 @@ Y probar a acceder desde el navegador (o con curl) a la IP del balanceador y ver
 
 ![apache funcionando tras el balanceador](./img/apache1.png)
 
+Para estar seguros de cómo se está balanceando la carga podemos crear una nueva página HTML en los apaches.  
+Para ello vamos al directorio */var/www/html* de cada apache y creamos un archivo llamado *name.html*
+
+Con el siguiente contenido:
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Name</title>
+</head>
+<body>
+  <p>Soy la máquina 1</p>
+</body>
+</html>
+```
+En la máquina2 lógicamente debe decir: "Soy la máquina 2"
+
+*Advertencia:*  
+Hay que tener en cuenta que si las máquinas tiene algún proceso de sincronización cuando el cron active el proceso de sincronización ambas máquinas pondrán el mismo nombre porque tendrán una copia idéntica de name.html.  
+Para evitarlo vamos a modificar la tarea cron:  
+_-- exclude=**/html/name.html_
+```
+0 * * * * root rsync -avz --delete  --exclude=**/html/name.html -e ssh 192.168$
+
+```
+
 #### Paso 3: Configuración ampliada de NGINX:
 
 
