@@ -139,4 +139,52 @@ Por ejemplo, para instalar express:
 npm install express
 ```
 
-Una vez tenemos el módulo instalado podemos importarlo a cualquier programa con la palabra clave: 
+Una vez tenemos el módulo instalado podemos importarlo a cualquier programa con la palabra clave:
+
+
+
+# Capitulo 3: Problemas de Node.js (al aumentar la carga) y su solución.
+
+Node.js es la herramienta líder para crear aplicaciones de servidor en JavaScript, el lenguaje de programación más popular del mundo. Al ofrecer tanto la funcionalidad de un servidor web como la de un servidor de aplicaciones,  Node.js se considera una herramienta clave para todo tipo de desarrollos y sistemas basados ​​en microservicios.
+
+Node.js puede reemplazar o aumentar Java o .NET para el desarrollo de aplicaciones back-end.
+
+Node.js tiene un único subproceso y utiliza E / S sin bloqueo, lo que le permite escalar y admitir decenas de miles de operaciones simultáneas. Comparte estas características arquitectónicas con NGINX y resuelve el problema C10K, que admite más de 10.000 conexiones simultáneas, que NGINX también inventó para resolver. Node.js es conocido por su alto rendimiento y productividad de desarrollador.
+
+Entonces, ¿qué podría salir mal?
+
+Node.js tiene algunos puntos débiles y vulnerabilidades que pueden hacer que los sistemas basados ​​en Node.js sean propensos a un bajo rendimiento o incluso a bloqueos. **Los problemas surgen con más frecuencia cuando una aplicación web basada en Node.js experimenta un rápido crecimiento del tráfico.**
+
+### Solución: Balanceo de carga y cacheo de archivos estáticos
+
+Node es un gran servidor para APIs pero no se le da tan bien servir archivos estáticos.
+Por eso colocar a NGINX al frente de nuestro backend puede servir para solucionar este problemas
+debido a que NGINX es un excelente servidor de archivos estáticos, además de poder utilizarlo para balancear el tráfico a los distintos servidores nodejs que tengamos detrás.  
+Llegado este punto es muy importante elegir un algoritmo de balanceo que mantenga las sesiones como el IP_hash.
+
+![](./img/c3/nginx-balancer.png)
+
+El archivo de configuración de nuestro NGINX debe quedar parecido a este:
+```
+server {
+    listen 80;
+    server_name rnogales.com;
+
+    root /home/rnogales/app/public;
+
+    location / {
+        try_files $uri @backend;
+    }
+
+    location @backend {
+        proxy_pass http://127.0.0.1:8080;
+        access_log off;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_hide_header X-Frame-Options;
+    }
+}
+```
