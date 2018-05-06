@@ -51,6 +51,12 @@ Sistemas Node.js Escalables
 ![](./img/sliders/nginx-balancer.png)
 
 ---
+
+
+
+---
+
+
 # Sources:
 
 https://medium.com/walmartlabs/the-benefits-of-server-side-rendering-over-client-side-rendering-5d07ff2cefe8
