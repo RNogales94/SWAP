@@ -179,6 +179,7 @@ Llegado este punto es muy importante elegir un algoritmo de balanceo que manteng
 
 El archivo de configuración de nuestro NGINX debe quedar parecido a este:
 
+**/etc/nginx/conf.d/default.conf**
 ```
 upstream nodejs-workers {
     ip_hash;                         # Mantener sesiones             
