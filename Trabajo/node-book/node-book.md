@@ -178,28 +178,37 @@ Llegado este punto es muy importante elegir un algoritmo de balanceo que manteng
 ![](./img/c3/nginx-balancer.png)
 
 El archivo de configuración de nuestro NGINX debe quedar parecido a este:
-```
-server {
-    listen 80;
-    server_name rnogales.com;
 
-    root /home/rnogales/app/public;
+```
+upstream nodejs-workers {
+    ip_hash;                         # Mantener sesiones             
+    server 192.168.1.54:8080 weight=1;    # NodeJS instance.1      
+    keepalive 10;
+}
+
+server{
+    listen 80;
+    server_name balanceador;
+
+    access_log /var/log/nginx/balanceador.access.log;
+    error_log /var/log/nginx/balanceador.error.log;
+
+    root /var/www/html;
 
     location / {
-        try_files $uri @backend;
+        try_files $uri $uri/ @backend $uri.html =404;
     }
 
     location @backend {
-        proxy_pass http://127.0.0.1:8080;
-        access_log off;
-
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_pass http://nodejs-workers;
         proxy_set_header Host $host;
-        proxy_hide_header X-Frame-Options;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
     }
 }
+
 ```
 
 # Capítulo 4: Configurar MongoDB como otra máquina diferente

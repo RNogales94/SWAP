@@ -51,7 +51,46 @@ Sistemas Node.js Escalables
 ![](./img/sliders/nginx-balancer.png)
 
 ---
+# Concretamente:
+**/etc/nginx/conf.d/default.conf**
+``` nginx
+upstream nodejs-workers {
+    ip_hash;                              # Mantener sesiones             
+    server 192.168.1.54:8080 weight=1;    # NodeJS instance.1      
+    #server <IP o dominio> weight=1;      # NodeJS instance.2
+    keepalive 10;
+}
+```
 
+
+
+---
+**/etc/nginx/conf.d/default.conf**
+
+``` nginx
+server{
+    listen 80;
+    server_name balanceador;
+
+    access_log /var/log/nginx/balanceador.access.log;
+    error_log /var/log/nginx/balanceador.error.log;
+
+    root /var/www/html;
+
+    location / {
+        try_files $uri $uri/ @backend $uri.html =404;
+    }
+
+    location @backend {
+        proxy_pass http://nodejs-workers;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+}
+```
 
 
 ---
