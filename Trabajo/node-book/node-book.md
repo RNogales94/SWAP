@@ -23,14 +23,19 @@ Además, Node forma parte fundamental en el stack MEAN
 
 
 # Capítulo 2: Instalación y Hello World
-Node puede instalarse en todos los sistemas operativos de escritorio (Linux, Windows y OS X). Instalarlo es bastante sencillo y basta descargarlo de la página oficial (https://nodejs.org/es/) y seguir las instrucciones.  
+
+Node puede instalarse en todos los sistemas operativos de escritorio (Linux, Windows y OS X).
+
+### Instalación en Mac y Windows
+
+ Instalarlo es bastante sencillo y basta descargarlo de la página oficial (https://nodejs.org/es/) y seguir las instrucciones.  
 
 *En muchos libros hacen una explicación super detallada de como se instala, mostrando muchas capturas de pantalla y explicando muy meticulosamente un proceso que es siempre igual y no tiene misterio alguno.  
 No quiero perder el tiempo escribiendo eso y tampoco quiero que pierdas tiempo leyendolo.*
 
 Supongamos que ya has ido a la página oficial y has visto que hay dos versiones para descargar.
 
-#### ¿Qué versión me descargo?
+##### ¿Qué versión me descargo?
 En general la que ponga **LTS** (Long Term Support) ya que va a estar más pulida y dará menos errores, además como la tiene más gente y desde hace más tiempo será más facil encontrar ayuda a problemas concretos en webs como StackOverflow y similares.  
 
 Supongamos ahora que ya has descargado el instalador de node, ahora simplemente ábrelo y aparecerá algo parecido a esto:
@@ -39,6 +44,14 @@ Supongamos ahora que ya has descargado el instalador de node, ahora simplemente 
 
 Cuando abras el instalador te informará de la versión que vas a descargarte y de dónde quieres instalarlo. Si lo estás instalando en un ordenador personal haz lo típico: dale a "Siguiente, acepto, continuar... Finalizar" con eso ya deberíamos tener node instalado.  
 Si lo estás instalando en un servidor en producción y estás leyendo esto tal vez deberías plantearte hacer pruebas en local antes.
+
+### Instalación en Linux
+
+```
+sudo apt-get install nodejs
+sudo apt-get install npm
+```
+
 
 Para **comprobar que se ha instalado correctamente** abrimos una terminal y escribimos:
 ```
@@ -139,7 +152,7 @@ Por ejemplo, para instalar express:
 npm install express
 ```
 
-Una vez tenemos el módulo instalado podemos importarlo a cualquier programa con la palabra clave:
+Una vez tenemos el módulo instalado podemos importarlo a cualquier programa con la palabra clave: **require**
 
 
 
@@ -188,3 +201,78 @@ server {
     }
 }
 ```
+
+# Capítulo 4: Configurar MongoDB como otra máquina diferente
+
+Para que cada instancia NodeJS pueda conectarse a la misma base de datos es necesario que mongo esté en una máquina a parte.  
+Para lo cual creamos un servidor ubuntu virgen y lo configuramos como servidor mongodb.  
+
+Instalación de MongoDB:
+
+```
+sudo apt-get install mongodb
+```
+
+Arrancar mongo al inicio del sistema:
+```
+sudo systemctl enable mongodb
+```
+
+Arrancar Mongo:
+```
+sudo systemctl start mongodb
+```
+
+Para permitir acceso a la base de datos desde cualquier IP comentamos la linea:  
+```
+bind_ip = 127.0.0.1
+```
+del archivo */etc/mongodb.conf*
+
+reiniciamos el demonio para que los cambios tengan efecto:
+```
+sudo systemctl restart mongodb
+```
+
+###  Conexión a MongoDB desde las máquinas Node:
+
+En primer lugar instalamos el cliente mongo:
+```
+sudo apt install mongodb-clients
+```
+
+Y luego nos conectamos mediante:
+```
+mongo 192.168.1.57
+```
+(Cambiando la IP por la que corresponda a vuestra máquina MongoDB)
+
+### Crear usuarios y bases de datos:
+Desde la consola de mongo escribimos lo siguiente:
+
+![](./img/mongo/root-user.png)
+
+Y para un usuario normal (sin privilegios de administrador):
+
+![](./img/mongo/db-user.png)
+
+
+##### Consejo:
+Para poder utilizar la IP de nuestra BD dentro de nuestro programa exportamos una variable de entorno en nuestras máquinas NodeJS:
+
+```
+export MONGO_HOST="192.168.1.57"
+export MONGO_USER="userdb"
+export MONGO_PASS="pass"
+export MONGO_DB="dbname"
+```
+
+De esta forma podremos establecer la conexión así:
+```
+var user = process.env.MONGO_USER,
+    password = process.env.MONGO_PASS,
+    host = process.env.MONGO_HOST || 'mongo',
+    port = '27017',
+    dbname = process.env.MONGO_DB,
+    connectionUrl = 'mongodb://' + user + ':' + password + '@' + host + ':' + port + '/' + dbname + '?authMechanism=DEFAULT&authSource=admin';
+      ``
