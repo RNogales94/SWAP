@@ -125,13 +125,100 @@ Para comprobar el estado del cortafuegos, debemos ejecutar:
 ```
 iptables –L –n -v
 ```
-Para lanzar, reiniciar o parar el cortafuegos, y para salvar las reglas establecidas hasta ese momento, ejecutaremos respectivamente:  
+
+Aunque tambien podemos utilizar **nmap** desde otra máquina para verificar qué puertos tiene abiertos la máquina que queremos proteger:
+
+Ejemplo (desde 192.168.1.XXX) ejecutamos nmap:
 ```
-service iptables start
-service iptables restart
-service iptables stop
-service iptables save
+$ nmap 192.168.1.44
+
+Starting Nmap 7.70 ( https://nmap.org ) at 2018-05-09 19:54 CEST
+Nmap scan report for 192.168.1.44
+Host is up (0.00065s latency).
+Not shown: 995 filtered ports
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+443/tcp  open  https
+3128/tcp open  squid-http
+8080/tcp open  http-proxy
+
+Nmap done: 1 IP address (1 host up) scanned in 5.04 seconds
 ```
+
+Estos son los puertos que quedan abiertos tras aplicar mis reglas iptables:
+
+*/home/usuario/.iptables/secure-iptables.sh*
+```
+#!/bin/sh
+
+# (1) Eliminar todas las reglas (configuración limpia)
+iptables -F
+iptables -X
+iptables -Z
+iptables -t nat -F
+# (2) Política por defecto: denegar todo el tráfico iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+# (3) Permitir cualquier iptables -A INPUT -i lo iptables -A OUTPUT -o lo
+# (4) Abrir el puerto 22
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT
+# (5) Abrir los puertos HTTP (80) de servidor web
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 80 -j ACCEPT
+# (5) Abrir los puertos HTTPS (443) de servidor web
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 443 -j ACCEPT
+```
+
+Si quisieramos restaurar la configuración por defecto tenemos:
+*/home/usuario/.iptables/set-default-iptables.sh*
+```
+#!/bin/sh
+
+# (1) Eliminar todas las reglas (configuración limpia)
+iptables -F
+iptables -X
+iptables -Z
+iptables -t nat -F
+# política por defecto: aceptar todo
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+```
+
+Para hacer que estas reglas se habiliten al arrancarse el sistema hay dos formas como podemos leer aquí:  
+[ejecutar un script al iniciar sesion en ubuntu](https://www.alvarolara.com/2013/03/20/ejecutar-un-script-al-iniciar-sesion-en-ubuntu/)
+
+En mi caso voy a optar por la segunda, ya que me parece más segura:
+
+#### init.d
+
+```
+sudo mv /home/usuario/script.sh /etc/init.d/
+sudo chmod +x /etc/init.d/script.sh
+sudo update-rc.d script.sh defaults
+```
+
+Si lo quisieramos desinstalar...  
+```
+sudo update-rc.d -f script.sh remove
+sudo rm /etc/init.d/script.sh
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
